@@ -1,1 +1,1 @@
-# CybersecSME
+# SafeSME
