@@ -367,9 +367,21 @@ const SentinelDashboard = () => {
               <Wrench className="w-5 h-5" />
               User Tools
             </button>
+            <button onClick={() => setActiveTab('advanced')} className={`nav-item ${activeTab === 'advanced' ? 'active' : ''}`}>
+              <Settings className="w-5 h-5" />
+              Advanced Tools
+            </button>
             <button onClick={() => setActiveTab('quiz')} className={`nav-item ${activeTab === 'quiz' ? 'active' : ''}`}>
               <Award className="w-5 h-5" />
               Awareness Quiz
+            </button>
+            <button onClick={() => setActiveTab('missions')} className={`nav-item ${activeTab === 'missions' ? 'active' : ''}`}>
+              <Gamepad2 className="w-5 h-5" />
+              Cyber Missions
+            </button>
+            <button onClick={() => setActiveTab('learning')} className={`nav-item ${activeTab === 'learning' ? 'active' : ''}`}>
+              <Brain className="w-5 h-5" />
+              Learning Zone
             </button>
             <button onClick={() => setActiveTab('leaderboard')} className={`nav-item ${activeTab === 'leaderboard' ? 'active' : ''}`}>
               <Users className="w-5 h-5" />
@@ -378,38 +390,6 @@ const SentinelDashboard = () => {
             <button onClick={() => setActiveTab('chat')} className={`nav-item ${activeTab === 'chat' ? 'active' : ''}`}>
               <MessageSquare className="w-5 h-5" />
               Chat with Senty
-            </button>
-            <button onClick={() => setActiveTab('missions')} className={`nav-item ${activeTab === 'missions' ? 'active' : ''}`}>
-              <Gamepad2 className="w-5 h-5" />
-              Cyber Missions
-            </button>
-            <button onClick={() => setActiveTab('heatmap')} className={`nav-item ${activeTab === 'heatmap' ? 'active' : ''}`}>
-              <Map className="w-5 h-5" />
-              Threat Heatmap
-            </button>
-            <button onClick={() => setActiveTab('privacy')} className={`nav-item ${activeTab === 'privacy' ? 'active' : ''}`}>
-              <Eye className="w-5 h-5" />
-              Privacy Analyzer
-            </button>
-            <button onClick={() => setActiveTab('advanced')} className={`nav-item ${activeTab === 'advanced' ? 'active' : ''}`}>
-              <Settings className="w-5 h-5" />
-              Advanced Tools
-            </button>
-            <button onClick={() => setActiveTab('reports')} className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`}>
-              <FileText className="w-5 h-5" />
-              Threat Reports
-            </button>
-            <button onClick={() => setActiveTab('learning')} className={`nav-item ${activeTab === 'learning' ? 'active' : ''}`}>
-              <Brain className="w-5 h-5" />
-              Learning Zone
-            </button>
-            <button onClick={() => setActiveTab('games')} className={`nav-item ${activeTab === 'games' ? 'active' : ''}`}>
-              <Gamepad2 className="w-5 h-5" />
-              Security Games
-            </button>
-            <button onClick={() => setActiveTab('scanner')} className={`nav-item ${activeTab === 'scanner' ? 'active' : ''}`}>
-              <Upload className="w-5 h-5" />
-              Offline Scanner
             </button>
           </nav>
         </div>
@@ -1064,6 +1044,74 @@ const SentinelDashboard = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Offline Scanner */}
+                <div className="card p-6">
+                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Upload className="w-6 h-6" />
+                    Offline Scanner
+                  </h3>
+                  <p className="text-blue-300 mb-4">Scan files on your local system for malware and threats</p>
+                  <div className="flex gap-4 mb-4">
+                    <input
+                      type="file"
+                      multiple
+                      className="flex-1 bg-blue-700 bg-opacity-50 px-4 py-3 rounded-lg border border-blue-500"
+                    />
+                    <button
+                      onClick={runOfflineScan}
+                      className="bg-cyan-500 hover:bg-cyan-600 text-blue-900 px-6 py-3 rounded-lg font-bold flex items-center gap-2"
+                    >
+                      <Zap className="w-5 h-5" />
+                      Start Scan
+                    </button>
+                  </div>
+                  
+                  {offlineScanResult && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center bg-blue-700 bg-opacity-50 p-4 rounded-lg">
+                          <div className="text-2xl font-bold text-green-400">{offlineScanResult.scannedFiles}</div>
+                          <div className="text-sm text-blue-300">Files Scanned</div>
+                        </div>
+                        <div className="text-center bg-blue-700 bg-opacity-50 p-4 rounded-lg">
+                          <div className="text-2xl font-bold text-red-400">{offlineScanResult.threatsFound}</div>
+                          <div className="text-sm text-blue-300">Threats Found</div>
+                        </div>
+                        <div className="text-center bg-blue-700 bg-opacity-50 p-4 rounded-lg">
+                          <div className="text-2xl font-bold text-cyan-400">{offlineScanResult.scanDuration}</div>
+                          <div className="text-sm text-blue-300">Duration</div>
+                        </div>
+                      </div>
+                      
+                      {offlineScanResult.threats.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold mb-2">Detected Threats:</h4>
+                          {offlineScanResult.threats.map((threat, i) => (
+                            <div key={i} className="flex items-center justify-between bg-red-500 bg-opacity-20 p-3 rounded-lg mb-2">
+                              <span className="font-mono text-sm">{threat.file}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">{threat.type}</span>
+                                <span className={`px-2 py-1 rounded text-xs font-bold ${getRiskColor(threat.severity)}`}>
+                                  {threat.severity}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div>
+                        <h4 className="font-semibold mb-2">Recommendations:</h4>
+                        <ul className="list-disc list-inside text-blue-300">
+                          {offlineScanResult.recommendations.map((rec, i) => (
+                            <li key={i}>{rec}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -1289,53 +1337,93 @@ const SentinelDashboard = () => {
           {activeTab === 'scanner' && (
             <div>
               <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
-                <Upload className="w-8 h-8" />
-                OFFLINE FILES SCANNER
+                <Zap className="w-8 h-8" />
+                THREAT SCANNER
               </h2>
               
               <div className="card p-6 mb-6">
-                <h3 className="text-xl font-semibold mb-4">Scan Local Files</h3>
-                <p className="text-blue-300 mb-4">Scan files on your local system for malware and threats</p>
-                <div className="flex gap-4 mb-4">
-                  <input
-                    type="file"
-                    multiple
-                    className="flex-1 bg-blue-700 bg-opacity-50 px-4 py-3 rounded-lg border border-blue-500"
-                  />
-                  <button
-                    onClick={runOfflineScan}
-                    className="bg-cyan-500 hover:bg-cyan-600 text-blue-900 px-6 py-3 rounded-lg font-bold flex items-center gap-2"
-                  >
-                    <Zap className="w-5 h-5" />
-                    Start Scan
-                  </button>
-                </div>
+                <h3 className="text-xl font-semibold mb-4">Online Threat Detection</h3>
+                <p className="text-blue-300 mb-4">Scan URLs, emails, and other online content for threats</p>
                 
-                {offlineScanResult && (
-                  <div className="space-y-4">
+                <div className="space-y-6">
+                  {/* URL Scanner */}
+                  <div>
+                    <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      <Globe className="w-5 h-5" />
+                      URL Scanner
+                    </h4>
+                    <div className="flex gap-4">
+                      <input
+                        type="url"
+                        placeholder="Enter URL to scan..."
+                        value={urlInput}
+                        onChange={(e) => setUrlInput(e.target.value)}
+                        className="flex-1 bg-blue-700 bg-opacity-50 px-4 py-3 rounded-lg border border-blue-500"
+                      />
+                      <button
+                        onClick={() => scanUrl(urlInput)}
+                        className="bg-cyan-500 hover:bg-cyan-600 text-blue-900 px-6 py-3 rounded-lg font-bold"
+                      >
+                        Scan URL
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Email Scanner */}
+                  <div>
+                    <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      <Mail className="w-5 h-5" />
+                      Email Scanner
+                    </h4>
+                    <div className="space-y-3">
+                      <input
+                        type="email"
+                        placeholder="Enter email address..."
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        className="w-full bg-blue-700 bg-opacity-50 px-4 py-3 rounded-lg border border-blue-500"
+                      />
+                      <textarea
+                        placeholder="Enter email content to analyze..."
+                        value={emailBody}
+                        onChange={(e) => setEmailBody(e.target.value)}
+                        className="w-full bg-blue-700 bg-opacity-50 px-4 py-3 rounded-lg border border-blue-500 h-24"
+                      />
+                      <button
+                        onClick={() => scanEmail(emailInput, emailBody)}
+                        className="bg-cyan-500 hover:bg-cyan-600 text-blue-900 px-6 py-3 rounded-lg font-bold"
+                      >
+                        Scan Email
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {scanResult && (
+                  <div className="mt-6 space-y-4">
                     <div className="grid grid-cols-3 gap-4">
                       <div className="text-center bg-blue-700 bg-opacity-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-green-400">{offlineScanResult.scannedFiles}</div>
-                        <div className="text-sm text-blue-300">Files Scanned</div>
+                        <div className="text-2xl font-bold text-green-400">{scanResult.riskScore}</div>
+                        <div className="text-sm text-blue-300">Risk Score</div>
                       </div>
                       <div className="text-center bg-blue-700 bg-opacity-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-red-400">{offlineScanResult.threatsFound}</div>
+                        <div className="text-2xl font-bold text-red-400">{scanResult.threatsFound}</div>
                         <div className="text-sm text-blue-300">Threats Found</div>
                       </div>
                       <div className="text-center bg-blue-700 bg-opacity-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-cyan-400">{offlineScanResult.scanDuration}</div>
-                        <div className="text-sm text-blue-300">Duration</div>
+                        <div className="text-2xl font-bold text-cyan-400">{scanResult.scanTime}</div>
+                        <div className="text-sm text-blue-300">Scan Time (ms)</div>
                       </div>
                     </div>
                     
-                    {offlineScanResult.threats.length > 0 && (
+                    {scanResult.threats.length > 0 && (
                       <div>
                         <h4 className="font-semibold mb-2">Detected Threats:</h4>
-                        {offlineScanResult.threats.map((threat, i) => (
+                        {scanResult.threats.map((threat, i) => (
                           <div key={i} className="flex items-center justify-between bg-red-500 bg-opacity-20 p-3 rounded-lg mb-2">
-                            <span className="font-mono text-sm">{threat.file}</span>
+                            <span className="font-mono text-sm">{threat.type}</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">{threat.type}</span>
+                              <span className="text-sm">{threat.description}</span>
                               <span className={`px-2 py-1 rounded text-xs font-bold ${getRiskColor(threat.severity)}`}>
                                 {threat.severity}
                               </span>
@@ -1344,51 +1432,6 @@ const SentinelDashboard = () => {
                         ))}
                       </div>
                     )}
-                    
-                    <div>
-                      <h4 className="font-semibold mb-2">Recommendations:</h4>
-                      <ul className="list-disc list-inside text-blue-300">
-                        {offlineScanResult.recommendations.map((rec, i) => (
-                          <li key={i}>{rec}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Export Security Report */}
-              <div className="card p-6">
-                <h3 className="text-xl font-semibold mb-4">Export Security Report</h3>
-                <p className="text-blue-300 mb-4">Generate comprehensive security reports for management</p>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => exportSecurityReport('pdf')}
-                    className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-bold"
-                  >
-                    Export PDF
-                  </button>
-                  <button
-                    onClick={() => exportSecurityReport('excel')}
-                    className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg font-bold"
-                  >
-                    Export Excel
-                  </button>
-                  <button
-                    onClick={() => exportSecurityReport('csv')}
-                    className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg font-bold"
-                  >
-                    Export CSV
-                  </button>
-                </div>
-                
-                {exportStatus && (
-                  <div className="mt-4 p-4 bg-green-500 bg-opacity-20 border border-green-500 rounded-lg">
-                    <h4 className="font-bold text-green-400 mb-2">Report Generated</h4>
-                    <p className="text-green-300">{exportStatus.status}</p>
-                    <p className="text-sm text-green-400 mt-2">
-                      Download URL: {exportStatus.downloadUrl}
-                    </p>
                   </div>
                 )}
               </div>
