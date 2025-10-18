@@ -19,6 +19,7 @@ body {
 .nav-item {
   @apply w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all hover:bg-blue-800;
 }
+
 .nav-item.active {
   @apply bg-green-400 text-blue-900 glow-green;
 }
