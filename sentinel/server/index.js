@@ -4,6 +4,13 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import mongoose from 'mongoose';
+
+// Import models
+import User from './models/User.js';
+import Activity from './models/Activity.js';
+import Report from './models/Report.js';
+import Mission from './models/Mission.js';
 
 dotenv.config();
 
@@ -98,11 +105,36 @@ app.post('/api/chat', (req, res) => {
 });
 
 // Activity log with enhanced features
-app.get('/api/activity', (_req, res) => res.json({ items: storage.activity.slice(-100).reverse() }));
-app.post('/api/activity', (req, res) => {
-  const item = { ...req.body, time: new Date().toISOString(), id: crypto.randomUUID() };
-  storage.activity.push(item);
-  res.json({ ok: true });
+app.get('/api/activity', async (req, res) => {
+  try {
+    const activities = await Activity.find()
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .populate('userId', 'username email');
+    res.json({ items: activities });
+  } catch (error) {
+    console.error('Error fetching activities:', error);
+    res.status(500).json({ error: 'Failed to fetch activities' });
+  }
+});
+
+app.post('/api/activity', async (req, res) => {
+  try {
+    const activity = new Activity({
+      type: req.body.type || 'General',
+      details: req.body.details || '',
+      threatType: req.body.threatType || 'other',
+      severity: req.body.severity || 'Low',
+      risk: req.body.risk || 'Low',
+      metadata: req.body.metadata || {}
+    });
+    
+    await activity.save();
+    res.json({ ok: true, id: activity._id });
+  } catch (error) {
+    console.error('Error creating activity:', error);
+    res.status(500).json({ error: 'Failed to create activity' });
+  }
 });
 
 // File integrity checker
@@ -207,38 +239,50 @@ app.get('/api/threats/heatmap', (_req, res) => {
 });
 
 // Cyber missions
-app.get('/api/missions', (_req, res) => {
-  const missions = [
-    {
-      id: 1,
-      title: 'Phishing Defense Master',
-      description: 'Complete 5 phishing detection challenges',
-      progress: 3,
-      total: 5,
-      reward: 100,
-      difficulty: 'Easy'
-    },
-    {
-      id: 2,
-      title: 'Password Guardian',
-      description: 'Generate and secure 10 strong passwords',
-      progress: 7,
-      total: 10,
-      reward: 150,
-      difficulty: 'Medium'
-    },
-    {
-      id: 3,
-      title: 'Network Sentinel',
-      description: 'Detect and report 3 network intrusions',
-      progress: 1,
-      total: 3,
-      reward: 200,
-      difficulty: 'Hard'
+app.get('/api/missions', async (req, res) => {
+  try {
+    let missions = await Mission.find({ isActive: true });
+    
+    // If no missions exist, create default ones
+    if (missions.length === 0) {
+      const defaultMissions = [
+        {
+          title: 'Phishing Defense Master',
+          description: 'Complete 5 phishing detection challenges',
+          difficulty: 'Easy',
+          points: 100,
+          total: 5,
+          category: 'phishing',
+          rewards: { points: 100, badge: 'Phishing Hunter' }
+        },
+        {
+          title: 'Password Guardian',
+          description: 'Generate and secure 10 strong passwords',
+          difficulty: 'Medium',
+          points: 150,
+          total: 10,
+          category: 'password',
+          rewards: { points: 150, badge: 'Password Master' }
+        },
+        {
+          title: 'Network Sentinel',
+          description: 'Detect and report 3 network intrusions',
+          difficulty: 'Hard',
+          points: 200,
+          total: 3,
+          category: 'network',
+          rewards: { points: 200, badge: 'Network Sentinel' }
+        }
+      ];
+      
+      missions = await Mission.insertMany(defaultMissions);
     }
-  ];
-  
-  res.json({ missions });
+    
+    res.json({ missions });
+  } catch (error) {
+    console.error('Error fetching missions:', error);
+    res.status(500).json({ error: 'Failed to fetch missions' });
+  }
 });
 
 // Privacy exposure analyzer
@@ -358,62 +402,86 @@ app.post('/api/autoheal/activate', (req, res) => {
 });
 
 // Report endpoints with external department forwarding
-app.post('/api/report/:target', (req, res) => {
-  const { target } = req.params;
-  const { details, threatType, severity, evidence } = req.body || {};
-  
-  const report = {
-    id: crypto.randomUUID(),
-    target,
-    details: details || '',
-    threatType: threatType || 'Unknown',
-    severity: severity || 'Medium',
-    evidence: evidence || '',
-    timestamp: new Date().toISOString(),
-    status: 'REPORTED'
-  };
-  
-  storage.reports.push(report);
-  storage.activity.push({
-    type: 'Threat Report',
-    target,
-    threatType,
-    severity,
-    time: new Date().toISOString()
-  });
-  
-  // Mock external department notifications
-  const notifications = {
-    'cybercrime': {
-      department: 'Cyber Crime Department',
-      contact: 'cybercrime@police.gov',
-      response: 'Report forwarded to cybercrime unit. Case ID: CC-' + crypto.randomUUID().slice(0, 8).toUpperCase()
-    },
-    'police': {
-      department: 'Police Department',
-      contact: 'emergency@police.gov',
-      response: 'Report forwarded to local police. Incident ID: PD-' + crypto.randomUUID().slice(0, 8).toUpperCase()
-    },
-    'hr': {
-      department: 'Human Resources',
+app.post('/api/report/:target', async (req, res) => {
+  try {
+    const { target } = req.params;
+    const { details, threatType, severity, evidence } = req.body || {};
+    
+    // Generate case ID
+    const caseId = target.toUpperCase() + '-' + crypto.randomUUID().slice(0, 8).toUpperCase();
+    
+    const report = new Report({
+      target,
+      details: details || '',
+      threatType: threatType || 'Unknown',
+      severity: severity || 'Medium',
+      evidence: evidence || '',
+      status: 'REPORTED',
+      caseId
+    });
+    
+    await report.save();
+    
+    // Log activity
+    const activity = new Activity({
+      type: 'Threat Report',
+      details: `Report submitted to ${target}`,
+      threatType: threatType || 'other',
+      severity: severity || 'Medium',
+      metadata: { reportId: report._id, caseId }
+    });
+    await activity.save();
+    
+    // Mock external department notifications
+    const notifications = {
+      'cybercrime': {
+        department: 'Cyber Crime Department',
+        contact: 'cybercrime@police.gov',
+        response: `Report forwarded to cybercrime unit. Case ID: ${caseId}`
+      },
+      'police': {
+        department: 'Police Department',
+        contact: 'emergency@police.gov',
+        response: `Report forwarded to local police. Incident ID: ${caseId}`
+      },
+      'hr': {
+        department: 'Human Resources',
+        contact: 'security@company.com',
+        response: `Report forwarded to HR department. Internal case: ${caseId}`
+      }
+    };
+    
+    const notification = notifications[target] || {
+      department: 'General Security',
       contact: 'security@company.com',
-      response: 'Report forwarded to HR department. Internal case: HR-' + crypto.randomUUID().slice(0, 8).toUpperCase()
-    }
-  };
-  
-  const notification = notifications[target] || {
-    department: 'General Security',
-    contact: 'security@company.com',
-    response: 'Report logged and forwarded to appropriate department'
-  };
-  
-  res.json({
-    ok: true,
-    reportId: report.id,
-    target,
-    notification,
-    message: `Threat report successfully forwarded to ${notification.department}`
-  });
+      response: 'Report logged and forwarded to appropriate department'
+    };
+    
+    res.json({
+      ok: true,
+      reportId: report._id,
+      target,
+      notification,
+      message: `Threat report successfully forwarded to ${notification.department}`
+    });
+  } catch (error) {
+    console.error('Error creating report:', error);
+    res.status(500).json({ error: 'Failed to create report' });
+  }
+});
+
+// Get all reports
+app.get('/api/reports', async (req, res) => {
+  try {
+    const reports = await Report.find()
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .populate('userId', 'username email');
+    res.json({ reports });
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+    res.status(500).json({ error: 'Failed to fetch reports' });
+  }
 });
 
 // Enhanced ranking system with YouTube integration
@@ -613,7 +681,96 @@ app.post('/api/panic', (_req, res) => {
   res.json({ ok: true, actions: ['network_isolation', 'teams_notified', 'logs_captured'] });
 });
 
+// MongoDB Connection
+const connectDB = async () => {
+  try {
+    const mongoUri = process.env.MONGO_URI || 'mongodb+srv://admin:admin123@cluster0.68cdadb.mongodb.net/sentinel?retryWrites=true&w=majority';
+    const conn = await mongoose.connect(mongoUri);
+    console.log(`✅ MongoDB connected: ${conn.connection.host}`);
+    console.log(`📊 Database: ${conn.connection.name}`);
+    
+    // Initialize default data to ensure collections are created
+    await initializeDefaultData();
+    
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error.message);
+    // Continue with in-memory storage if MongoDB fails
+    console.log('⚠️  Using in-memory storage as fallback');
+  }
+};
+
+// Initialize default data to create collections
+const initializeDefaultData = async () => {
+  try {
+    // Check if missions exist, if not create default ones
+    const missionCount = await Mission.countDocuments();
+    if (missionCount === 0) {
+      console.log('📝 Creating default missions...');
+      const defaultMissions = [
+        {
+          title: 'Phishing Defense Master',
+          description: 'Complete 5 phishing detection challenges',
+          difficulty: 'Easy',
+          points: 100,
+          total: 5,
+          category: 'phishing',
+          rewards: { points: 100, badge: 'Phishing Hunter' }
+        },
+        {
+          title: 'Password Guardian',
+          description: 'Generate and secure 10 strong passwords',
+          difficulty: 'Medium',
+          points: 150,
+          total: 10,
+          category: 'password',
+          rewards: { points: 150, badge: 'Password Master' }
+        },
+        {
+          title: 'Network Sentinel',
+          description: 'Detect and report 3 network intrusions',
+          difficulty: 'Hard',
+          points: 200,
+          total: 3,
+          category: 'network',
+          rewards: { points: 200, badge: 'Network Sentinel' }
+        }
+      ];
+      
+      await Mission.insertMany(defaultMissions);
+      console.log('✅ Default missions created');
+    }
+
+    // Create a sample activity to ensure Activity collection exists
+    const activityCount = await Activity.countDocuments();
+    if (activityCount === 0) {
+      console.log('📝 Creating sample activity...');
+      const sampleActivity = new Activity({
+        type: 'System Initialization',
+        details: 'Sentinel system started successfully',
+        threatType: 'other',
+        severity: 'Low',
+        risk: 'Low'
+      });
+      await sampleActivity.save();
+      console.log('✅ Sample activity created');
+    }
+
+    // List all collections to verify they exist
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    console.log('📁 Available collections:', collections.map(c => c.name));
+    
+  } catch (error) {
+    console.error('❌ Error initializing default data:', error.message);
+  }
+};
+
+// Connect to MongoDB
+connectDB();
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Sentinel API running on :${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Sentinel API running on http://localhost:${PORT}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+});
 
 
