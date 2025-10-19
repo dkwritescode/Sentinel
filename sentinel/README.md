@@ -1,21 +1,24 @@
-# Sentinel - Cybersecurity Platform
+# Sentinel-SME - Cybersecurity Platform
 
-A comprehensive MERN stack cybersecurity platform for small and medium enterprises.
+A comprehensive MERN stack cybersecurity platform with AI/ML capabilities for small and medium enterprises.
 
-## Features
+## 🚀 Features
 
-- **AI/ML Threat Detection** - URL, Email, and Fraud scanning
+- **AI/ML Threat Detection** - Advanced URL, Email, and Fraud scanning using LightGBM
+- **Browser Extension** - Real-time protection while browsing
 - **Gamified Learning** - Interactive missions, ranking system (Bronze to Diamond)
 - **YouTube Integration** - Educational videos with point rewards
 - **Advanced Security Tools** - Honeypot simulation, deepfake detection, privacy analyzer
 - **Report System** - Forward threats to cybercrime/police/HR departments
 - **Offline Scanner** - Local file scanning and report export
 - **Auto-Heal Mode** - Automatic threat response and mitigation
+- **Machine Learning Backend** - Python Flask API for AI-powered analysis
 
 ## Setup Instructions
 
 ### Prerequisites
 - Node.js (v16 or higher)
+- Python 3.8+ (for ML backend)
 - MongoDB (local or MongoDB Atlas)
 - npm or yarn
 
@@ -60,7 +63,28 @@ Start the frontend:
 npm run dev
 ```
 
-### 3. MongoDB Setup
+### 3. ML Backend Setup
+
+```bash
+cd sentinel/ml-backend
+pip install -r requirements.txt
+```
+
+Start the ML API server:
+```bash
+python ml_api.py
+```
+
+The ML API will run on port 5001 and provide AI-powered threat detection.
+
+### 4. Browser Extension Setup
+
+1. Open Chrome/Edge and go to `chrome://extensions/`
+2. Enable "Developer mode"
+3. Click "Load unpacked" and select the `sentinel/extension` folder
+4. The Sentinel extension will be installed and active
+
+### 5. MongoDB Setup
 
 #### Local MongoDB
 1. Install MongoDB locally
@@ -73,11 +97,13 @@ npm run dev
 3. Get your connection string
 4. Update the `MONGO_URI` in your `.env` file
 
-### 4. Access the Application
+### 6. Access the Application
 
 - Frontend: http://localhost:5173
-- Backend API: http://localhost:5000
+- Main API: http://localhost:5000
+- ML API: http://localhost:5001
 - Health Check: http://localhost:5000/api/health
+- ML Health Check: http://localhost:5001/health
 
 ## API Endpoints
 
@@ -104,6 +130,12 @@ npm run dev
 - `POST /api/security/boost` - One-click security boost
 - `POST /api/scanner/offline` - Scan local files
 
+### ML API Endpoints (Port 5001)
+- `GET /health` - ML API health check
+- `POST /predict/url` - ML-powered URL threat prediction
+- `POST /predict/email` - ML-powered email phishing prediction
+- `POST /analyze/fraud` - ML-powered fraud analysis
+
 ## Database Models
 
 - **User** - User accounts with ranking and progress
@@ -127,11 +159,40 @@ npm run dev
 - The backend is configured to allow all origins in development
 - For production, update CORS settings in `server/index.js`
 
+## 📁 Project Structure
+
+```
+sentinel/
+├── client/                 # React frontend
+│   ├── src/
+│   │   ├── components/    # React components
+│   │   ├── styles/        # CSS styles
+│   │   └── main.jsx       # Entry point
+│   └── package.json
+├── server/                # Node.js backend
+│   ├── models/            # MongoDB models
+│   ├── index.js          # Server entry point
+│   └── package.json
+├── ml-backend/            # Python ML backend
+│   ├── ml_api.py         # Flask ML API server
+│   ├── data/             # Training datasets
+│   ├── *.pkl             # Trained ML models
+│   └── requirements.txt  # Python dependencies
+├── extension/             # Browser extension
+│   ├── manifest.json     # Extension manifest
+│   ├── background.js     # Background script
+│   ├── content.js        # Content script
+│   └── popup.html        # Extension popup
+└── README.md
+```
+
 ## Development
 
 The application uses:
 - **Backend**: Express.js, MongoDB, Mongoose
 - **Frontend**: React, Vite, Tailwind CSS
+- **ML Backend**: Python, Flask, LightGBM, scikit-learn
+- **Browser Extension**: JavaScript, Chrome Extension API
 - **Icons**: Lucide React
 - **State Management**: React Hooks
 

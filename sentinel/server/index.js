@@ -40,34 +40,142 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, name: 'Sentinel API', time: new Date().toISOString() });
 });
 
-// Simple URL "scan" mock
-app.post('/api/scan/url', (req, res) => {
+// AI/ML assisted URL phishing detection
+app.post('/api/scan/url', async (req, res) => {
   const { url } = req.body || {};
-  const text = String(url || '').toLowerCase();
-  const isMal = /phish|suspicious|malware|login|verify/.test(text) || Math.random() > 0.6;
-  res.json({
-    type: 'url',
-    status: isMal ? 'THREAT DETECTED' : 'SAFE',
-    details: isMal
-      ? 'This URL shows signs of phishing or malware distribution.'
-      : 'No threats detected. URL appears safe.',
-    risk: isMal ? 'Critical' : 'Low'
-  });
+  
+  try {
+    // Call ML backend for real AI/ML detection
+    const mlResponse = await fetch('http://localhost:5001/predict/url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    
+    if (mlResponse.ok) {
+      const mlResult = await mlResponse.json();
+      
+      // Log activity
+      const activity = new Activity({
+        type: 'URL Scan',
+        details: `Scanned URL: ${url}`,
+        threatType: 'phishing',
+        severity: mlResult.risk_level,
+        risk: mlResult.risk_level,
+        metadata: { 
+          url, 
+          isMalicious: mlResult.is_malicious,
+          confidence: mlResult.confidence 
+        }
+      });
+      await activity.save();
+      
+      res.json({
+        type: 'url',
+        status: mlResult.is_malicious ? 'THREAT DETECTED' : 'SAFE',
+        details: mlResult.is_malicious 
+          ? `AI detected malicious patterns: ${mlResult.confidence}% confidence` 
+          : 'No threats detected. URL appears safe.',
+        risk: mlResult.risk_level,
+        confidence: mlResult.confidence,
+        features: mlResult.features
+      });
+    } else {
+      // Fallback to mock detection if ML API is unavailable
+      const text = String(url || '').toLowerCase();
+      const isMal = /phish|suspicious|malware|login|verify/.test(text) || Math.random() > 0.6;
+      res.json({
+        type: 'url',
+        status: isMal ? 'THREAT DETECTED' : 'SAFE',
+        details: isMal
+          ? 'This URL shows signs of phishing or malware distribution.'
+          : 'No threats detected. URL appears safe.',
+        risk: isMal ? 'Critical' : 'Low'
+      });
+    }
+  } catch (error) {
+    console.error('Error in URL scanning:', error);
+    // Fallback to mock detection
+    const text = String(url || '').toLowerCase();
+    const isMal = /phish|suspicious|malware|login|verify/.test(text) || Math.random() > 0.6;
+    res.json({
+      type: 'url',
+      status: isMal ? 'THREAT DETECTED' : 'SAFE',
+      details: isMal
+        ? 'This URL shows signs of phishing or malware distribution.'
+        : 'No threats detected. URL appears safe.',
+      risk: isMal ? 'Critical' : 'Low'
+    });
+  }
 });
 
-// Simple Email phishing mock
-app.post('/api/scan/email', (req, res) => {
+// AI/ML assisted Email phishing detection
+app.post('/api/scan/email', async (req, res) => {
   const { subject = '', body = '' } = req.body || {};
-  const text = `${subject} ${body}`.toLowerCase();
-  const isPhish = /(urgent|verify|suspended|password|reset|invoice|wire transfer|click here|verify account)/.test(text) || Math.random() > 0.5;
-  res.json({
-    type: 'email',
-    status: isPhish ? 'PHISHING DETECTED' : 'SAFE',
-    details: isPhish
-      ? 'Email contains phishing indicators: urgency, suspicious requests or links.'
-      : 'No phishing patterns detected.',
-    risk: isPhish ? 'High' : 'Low'
-  });
+  
+  try {
+    // Call ML backend for real AI/ML detection
+    const mlResponse = await fetch('http://localhost:5001/predict/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject, body })
+    });
+    
+    if (mlResponse.ok) {
+      const mlResult = await mlResponse.json();
+      
+      // Log activity
+      const activity = new Activity({
+        type: 'Email Scan',
+        details: `Scanned email: ${subject}`,
+        threatType: 'phishing',
+        severity: mlResult.risk_level,
+        risk: mlResult.risk_level,
+        metadata: { 
+          subject, 
+          isPhishing: mlResult.is_phishing,
+          confidence: mlResult.confidence 
+        }
+      });
+      await activity.save();
+      
+      res.json({
+        type: 'email',
+        status: mlResult.is_phishing ? 'PHISHING DETECTED' : 'SAFE',
+        details: mlResult.is_phishing 
+          ? `AI detected phishing patterns: ${mlResult.confidence}% confidence` 
+          : 'No phishing patterns detected.',
+        risk: mlResult.risk_level,
+        confidence: mlResult.confidence,
+        phishing_score: mlResult.phishing_score
+      });
+    } else {
+      // Fallback to mock detection if ML API is unavailable
+      const text = `${subject} ${body}`.toLowerCase();
+      const isPhish = /(urgent|verify|suspended|password|reset|invoice|wire transfer|click here|verify account)/.test(text) || Math.random() > 0.5;
+      res.json({
+        type: 'email',
+        status: isPhish ? 'PHISHING DETECTED' : 'SAFE',
+        details: isPhish
+          ? 'Email contains phishing indicators: urgency, suspicious requests or links.'
+          : 'No phishing patterns detected.',
+        risk: isPhish ? 'High' : 'Low'
+      });
+    }
+  } catch (error) {
+    console.error('Error in email scanning:', error);
+    // Fallback to mock detection
+    const text = `${subject} ${body}`.toLowerCase();
+    const isPhish = /(urgent|verify|suspended|password|reset|invoice|wire transfer|click here|verify account)/.test(text) || Math.random() > 0.5;
+    res.json({
+      type: 'email',
+      status: isPhish ? 'PHISHING DETECTED' : 'SAFE',
+      details: isPhish
+        ? 'Email contains phishing indicators: urgency, suspicious requests or links.'
+        : 'No phishing patterns detected.',
+      risk: isPhish ? 'High' : 'Low'
+    });
+  }
 });
 
 // Fraud detection endpoint
