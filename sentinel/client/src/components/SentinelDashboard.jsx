@@ -8,6 +8,7 @@ import {
 import axios from 'axios';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+ const LOGO_PATH = import.meta.env.VITE_LOGO_PATH || '/sentinel-logo.png';
 
 const SentinelDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -52,7 +53,10 @@ const SentinelDashboard = () => {
   const [exportStatus, setExportStatus] = useState(null);
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordStrength, setPasswordStrength] = useState(null);
-  const [generatedPassword, setGeneratedPassword] = useState('');
+const [generatedPassword, setGeneratedPassword] = useState('');
+const [showProfileModal, setShowProfileModal] = useState(false);
+const [showPassword, setShowPassword] = useState(false);
+const [logoFailed, setLogoFailed] = useState(false);
 
   const securityEvents = [
     { time: '10:30', type: 'Email Scan', event: 'Phishing Detected (CEO email)', risk: 'High' },
@@ -566,12 +570,54 @@ const SentinelDashboard = () => {
         </div>
       )}
 
-      <div className="bg-blue-900/60 backdrop-blur-xl border-b border-blue-700 p-4">
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 bg-blue-900/70 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-blue-800 border border-blue-600 rounded-xl p-6 w-[420px] shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">User Profile</h3>
+              <button className="text-blue-200 hover:text-white" onClick={() => setShowProfileModal(false)}>✕</button>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <span className="text-blue-900 font-bold">RK</span>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold">Riley Kim</p>
+                  <p className="text-xs subtle">User Summary</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-blue-700/40 rounded-lg p-3 border border-blue-600">
+                  <p className="text-xs subtle">Rank</p>
+                  <p className="font-bold">{userRank.currentRank || 'Bronze'}</p>
+                </div>
+                <div className="bg-blue-700/40 rounded-lg p-3 border border-blue-600">
+                  <p className="text-xs subtle">Points</p>
+                  <p className="font-bold">{userRank.totalPoints || 0}</p>
+                </div>
+              </div>
+              <div className="text-sm text-blue-200">
+                <p>Recent activity and achievements summarized.</p>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700" onClick={() => setShowProfileModal(false)}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-blue-900/60 backdrop-blur-xl border-b border-blue-700 p-4 sticky top-0 z-50">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <Shield className="w-8 h-8 text-green-400" />
+            {!logoFailed ? (
+  <img src={LOGO_PATH} alt="Sentinel logo" className="w-8 h-8 object-contain" onError={() => setLogoFailed(true)} />
+) : (
+  <Shield className="w-8 h-8 text-green-400" />
+)}
             <div>
-              <h1 className="text-2xl font-extrabold text-green-400">SENTINEL-SME</h1>
+              <h1 className="text-2xl font-extrabold text-green-400">Sentinel</h1>
               <p className="text-xs subtle">Cybersecurity Dashboard</p>
             </div>
           </div>
@@ -592,7 +638,7 @@ const SentinelDashboard = () => {
               <p className="text-xs subtle">Rank: {userRank.currentRank || 'Bronze'}</p>
               <p className="text-xs subtle">{userRank.totalPoints || 0} pts</p>
             </div>
-            <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center cursor-pointer" onClick={() => setShowProfileModal(true)} title="View profile">
               <span className="text-blue-900 font-bold">RK</span>
             </div>
           </div>
@@ -600,8 +646,8 @@ const SentinelDashboard = () => {
       </div>
 
       <div className="flex max-w-7xl mx-auto">
-        <div className="w-64 bg-blue-900/40 backdrop-blur-xl p-4 min-h-screen border-r border-blue-700">
-          <nav className="space-y-2">
+        <div className="w-64 bg-blue-900/40 backdrop-blur-xl p-4 border-r border-blue-700 sticky top-0 h-screen">
+          <nav className="space-y-2 h-full overflow-y-auto pr-2">
             <button onClick={() => setActiveTab('dashboard')} className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}>
               <Activity className="w-5 h-5" />
               Dashboard
@@ -758,6 +804,7 @@ const SentinelDashboard = () => {
                   <DollarSign className="w-5 h-5" />Fraud Detection
                 </button>
               </div>
+              {activeScanType === 'url' && (
               <div className="bg-blue-800 bg-opacity-50 backdrop-blur-sm p-6 rounded-xl border border-blue-600 mb-6">
                 <h3 className="text-xl font-semibold mb-4">Enter URL to Scan</h3>
                 <div className="flex gap-4">
@@ -765,7 +812,9 @@ const SentinelDashboard = () => {
                   <button onClick={scanUrl} className="bg-cyan-500 hover:bg-cyan-600 text-blue-900 px-6 py-3 rounded-lg font-bold flex items-center gap-2"><Zap className="w-5 h-5" />Execute Scan</button>
                 </div>
               </div>
+              )}
 
+              {activeScanType === 'email' && (
               <div className="bg-blue-800 bg-opacity-50 backdrop-blur-sm p-6 rounded-xl border border-blue-600 mb-6">
                 <h3 className="text-xl font-semibold mb-4">Enter Email Subject/Sender Line</h3>
                 <input type="text" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="Subject: Urgent password reset required" className="w-full bg-blue-700 bg-opacity-50 px-4 py-3 rounded-lg border border-blue-500 focus:outline-none focus:border-cyan-400 mb-4" />
@@ -773,7 +822,9 @@ const SentinelDashboard = () => {
                 <textarea value={emailBody} onChange={(e) => setEmailBody(e.target.value)} placeholder="Paste the first few lines of the email body here..." className="w-full h-32 bg-blue-700 bg-opacity-50 px-4 py-3 rounded-lg border border-blue-500 focus:outline-none focus:border-cyan-400 mb-4" />
                 <button onClick={scanEmail} className="bg-cyan-500 hover:bg-cyan-600 text-blue-900 px-6 py-3 rounded-lg font-bold flex items-center gap-2"><Zap className="w-5 h-5" />Execute Scan</button>
               </div>
+              )}
 
+              {activeScanType === 'fraud' && (
               <div className="bg-blue-800 bg-opacity-50 backdrop-blur-sm p-6 rounded-xl border border-blue-600 mb-6">
                 <h3 className="text-xl font-semibold mb-4">Fraud Detection</h3>
                 <div className="space-y-4">
@@ -785,6 +836,7 @@ const SentinelDashboard = () => {
                   <button onClick={scanFraud} className="bg-cyan-500 hover:bg-cyan-600 text-blue-900 px-6 py-3 rounded-lg font-bold flex items-center gap-2"><Zap className="w-5 h-5" />Execute Scan</button>
                 </div>
               </div>
+              )}
               {scanResult && (
                 <div className={`${(scanResult.risk === 'Critical' || scanResult.risk === 'High') ? 'bg-red-500' : 'bg-green-500'} bg-opacity-20 backdrop-blur-sm p-6 rounded-xl border ${(scanResult.risk === 'Critical' || scanResult.risk === 'High') ? 'border-red-500' : 'border-green-500'}`}>
                   <div className="flex items-center justify-between mb-4">
@@ -895,7 +947,13 @@ const SentinelDashboard = () => {
                 {/* Password Strength */}
                 <div className="bg-blue-800 bg-opacity-50 backdrop-blur-sm p-6 rounded-xl border border-blue-600">
                   <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><Lock className="w-6 h-6" />Password Strength Checker</h3>
-                  <input type="password" value={passwordInput} onChange={(e) => { setPasswordInput(e.target.value); setPasswordStrength(e.target.value ? checkPasswordStrength(e.target.value) : null); }} placeholder="Enter your password..." className="w-full bg-blue-700 bg-opacity-50 px-4 py-3 rounded-lg border border-blue-500 focus:outline-none focus:border-cyan-400 mb-4" />
+                  <div className="relative mb-4">
+  <input type={showPassword ? 'text' : 'password'} value={passwordInput} onChange={(e) => { setPasswordInput(e.target.value); setPasswordStrength(e.target.value ? checkPasswordStrength(e.target.value) : null); }} placeholder="Enter your password..." className="w-full bg-blue-700 bg-opacity-50 px-4 py-3 rounded-lg border border-blue-500 focus:outline-none focus:border-cyan-400 pr-24" />
+  <button type="button" aria-label={showPassword ? 'Hide password' : 'Reveal password'} onClick={() => setShowPassword((s) => !s)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded flex items-center gap-1">
+    <Eye className="w-4 h-4" />
+    {showPassword ? 'Hide' : 'Reveal'}
+  </button>
+</div>
                   {passwordStrength && (
                     <div>
                       <div className="flex items-center justify-between mb-2"><span className="font-semibold">Strength: {passwordStrength.level}</span><span>{passwordStrength.strength}%</span></div>
@@ -927,6 +985,7 @@ const SentinelDashboard = () => {
                     <button className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg font-semibold">+ Add New Password</button>
                   </div>
                 </div>
+
                 {/* File Integrity */}
                 <div className="bg-blue-800 bg-opacity-50 backdrop-blur-sm p-6 rounded-xl border border-blue-600">
                   <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><FileCheck className="w-6 h-6" />File Integrity Checker</h3>
@@ -1719,111 +1778,7 @@ const SentinelDashboard = () => {
             </div>
           )}
 
-          {/* Offline Scanner */}
-          {activeTab === 'scanner' && (
-            <div>
-              <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
-                <Zap className="w-8 h-8" />
-                THREAT SCANNER
-              </h2>
-              
-              <div className="card p-6 mb-6">
-                <h3 className="text-xl font-semibold mb-4">Online Threat Detection</h3>
-                <p className="text-blue-300 mb-4">Scan URLs, emails, and other online content for threats</p>
-                
-                <div className="space-y-6">
-                  {/* URL Scanner */}
-                  <div>
-                    <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                      <Globe className="w-5 h-5" />
-                      URL Scanner
-                    </h4>
-                    <div className="flex gap-4">
-                  <input
-                        type="url"
-                        placeholder="Enter URL to scan..."
-                        value={urlInput}
-                        onChange={(e) => setUrlInput(e.target.value)}
-                    className="flex-1 bg-blue-700 bg-opacity-50 px-4 py-3 rounded-lg border border-blue-500"
-                  />
-                  <button
-                        onClick={() => scanUrl(urlInput)}
-                        className="bg-cyan-500 hover:bg-cyan-600 text-blue-900 px-6 py-3 rounded-lg font-bold"
-                  >
-                        Scan URL
-                  </button>
-                    </div>
-                </div>
-                
-                  {/* Email Scanner */}
-                  <div>
-                    <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                      <Mail className="w-5 h-5" />
-                      Email Scanner
-                    </h4>
-                    <div className="space-y-3">
-                      <input
-                        type="email"
-                        placeholder="Enter email address..."
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        className="w-full bg-blue-700 bg-opacity-50 px-4 py-3 rounded-lg border border-blue-500"
-                      />
-                      <textarea
-                        placeholder="Enter email content to analyze..."
-                        value={emailBody}
-                        onChange={(e) => setEmailBody(e.target.value)}
-                        className="w-full bg-blue-700 bg-opacity-50 px-4 py-3 rounded-lg border border-blue-500 h-24"
-                      />
-                      <button
-                        onClick={() => scanEmail(emailInput, emailBody)}
-                        className="bg-cyan-500 hover:bg-cyan-600 text-blue-900 px-6 py-3 rounded-lg font-bold"
-                      >
-                        Scan Email
-                      </button>
-                    </div>
-                  </div>
-                </div>
 
-                {scanResult && (
-                  <div className="mt-6 space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center bg-blue-700 bg-opacity-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-green-400">{scanResult.riskScore}</div>
-                        <div className="text-sm text-blue-300">Risk Score</div>
-                      </div>
-                      <div className="text-center bg-blue-700 bg-opacity-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-red-400">{scanResult.threatsFound}</div>
-                        <div className="text-sm text-blue-300">Threats Found</div>
-                      </div>
-                      <div className="text-center bg-blue-700 bg-opacity-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-cyan-400">{scanResult.scanTime}</div>
-                        <div className="text-sm text-blue-300">Scan Time (ms)</div>
-                      </div>
-                    </div>
-                    
-                    {scanResult.threats.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold mb-2">Detected Threats:</h4>
-                        {scanResult.threats.map((threat, i) => (
-                          <div key={i} className="flex items-center justify-between bg-red-500 bg-opacity-20 p-3 rounded-lg mb-2">
-                            <span className="font-mono text-sm">{threat.type}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">{threat.description}</span>
-                              <span className={`px-2 py-1 rounded text-xs font-bold ${getRiskColor(threat.severity)}`}>
-                                {threat.severity}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-                      </div>
-                    )}
-                    
         {/* Panic Confirmation Dialog */}
         {showPanicConfirmation && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
