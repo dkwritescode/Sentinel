@@ -1,6 +1,4 @@
-<<<<<<< HEAD
 # SafeSME
-=======
 # CybersecSME 
 .mean-app
 ├── backend/
@@ -40,4 +38,3 @@
 ├── .gitignore
 ├── README.md
 └── docker-compose.yml            # (Optional) For running all services together
->>>>>>> d1ea5843d88b22a56c59881ef9068423a4ca6381
